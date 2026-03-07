@@ -7,6 +7,7 @@ import com.shortner.url_shortner.services.TokenBlacklistService;
 import com.shortner.url_shortner.services.UserDetailsServiceImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,6 +19,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.web.servlet.HandlerExceptionResolver;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -28,6 +30,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private UserDetailsServiceImpl userDetailsServiceImpl;
     @Autowired
     private TokenBlacklistService tokenBlacklistService;
+
+    @Autowired
+    @Qualifier("handlerExceptionResolver")
+    private HandlerExceptionResolver handlerExceptionResolver;
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
@@ -61,7 +67,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 }
             }
         } catch (Exception e) {
-            throw new RuntimeException("Cannot set user authentication: " + e.getMessage());
+            handlerExceptionResolver.resolveException(request, response, null, e);
         }
         filterChain.doFilter(request, response);
     }

@@ -8,6 +8,10 @@ import java.util.stream.Collectors;
 import com.shortner.url_shortner.apiresponse.ApiReponse;
 import com.shortner.url_shortner.exceptions.ResourceNotFoundException;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +63,19 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(JwtException.class)
     public ResponseEntity<ApiReponse<Object>> handleJwtException(JwtException e) {
-        return buildErrorResponse(e.getMessage(), HttpStatus.UNAUTHORIZED, null);
+        String message = "Invalid token";
+
+        if (e instanceof ExpiredJwtException) {
+            message = "Token has expired. Please login again.";
+        } else if (e instanceof SignatureException) {
+            message = "Token signature is invalid. Possible tampering detected.";
+        } else if (e instanceof MalformedJwtException) {
+            message = "Token is malformed or incorrectly formatted.";
+        } else if (e instanceof UnsupportedJwtException) {
+            message = "Token format is not supported.";
+        }
+
+        return buildErrorResponse(message, HttpStatus.UNAUTHORIZED, null);
     }
 
     @ExceptionHandler(AuthorizationDeniedException.class)
