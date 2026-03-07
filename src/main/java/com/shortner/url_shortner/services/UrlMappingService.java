@@ -76,7 +76,11 @@ public class UrlMappingService {
 
     public List<UrlMappingDto> getAllUrls(Optional<UserEntity> user) {
 
-        List<UrlMappingDto> urlMappingDtos= urlMappingRepository.findByUser(user).stream().map(m->{return UrlMappingDto.builder().orignalUrl(m.getOriginalUrl()).id(m.getId()).createdAt(m.getCreatedAt()).shortUrl(m.getShortUrl()).clickCount(m.getClickCount()).username(m.getUser().getUsername()).build();}).collect(Collectors.toList());
+        List<UrlMappingDto> urlMappingDtos= urlMappingRepository.findByUserWithUser(user)
+                .stream().map(m->{return UrlMappingDto.builder()
+                        .orignalUrl(m.getOriginalUrl()).id(m.getId()).createdAt(m.getCreatedAt())
+                        .shortUrl(m.getShortUrl()).clickCount(m.getClickCount())
+                        .username(m.getUser().getUsername()).build();}).collect(Collectors.toList());
         log.info("urlMappingDtos:"+urlMappingDtos);
         System.out.println(urlMappingDtos);
     return urlMappingDtos;
@@ -101,7 +105,7 @@ public class UrlMappingService {
 
 
     public Map<LocalDate,Long> getTotalClicksByUserAndDate(UserEntity user, LocalDateTime startDateTime, LocalDateTime endDateTime) {
-        List<UrlMappingEntity> urlMappingEntityList=urlMappingRepository.findByUser(Optional.ofNullable(user));
+        List<UrlMappingEntity> urlMappingEntityList=urlMappingRepository.findByUserWithUser(Optional.ofNullable(user));
         if(urlMappingEntityList.isEmpty())
         {
             throw new ResourceNotFoundException("no Urls Found");
