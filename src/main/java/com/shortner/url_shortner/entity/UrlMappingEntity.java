@@ -37,7 +37,7 @@ public class UrlMappingEntity {
     private Long id;
     @Column(nullable = false)
     private String originalUrl;
-    @Column(nullable = false, unique = true)
+    @Column(unique = true)
     private String shortUrl;
     @Builder.Default
     private Integer clickCount = 0;

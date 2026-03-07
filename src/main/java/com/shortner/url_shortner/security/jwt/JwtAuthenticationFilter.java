@@ -3,6 +3,7 @@ package com.shortner.url_shortner.security.jwt;
 import java.io.IOException;
 
 import com.shortner.url_shortner.jwtUtil.JwtUtils;
+import com.shortner.url_shortner.services.TokenBlacklistService;
 import com.shortner.url_shortner.services.UserDetailsServiceImpl;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,14 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     @Autowired
     private UserDetailsServiceImpl userDetailsServiceImpl;
+    @Autowired
+    private TokenBlacklistService tokenBlacklistService;
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return path.startsWith("/auth/");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request,
@@ -35,10 +44,15 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             // get jwt header
             String jwtToken = jwtUtils.getJwtTokenFromHeader(request);
             if (jwtToken != null && jwtUtils.validateJwtToken(jwtToken)) {
+                if (tokenBlacklistService.isBlacklisted(jwtToken)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
+
                 Long userId = jwtUtils.getUserIdFromToken(jwtToken);
 
                 UserDetails userDetails = userDetailsServiceImpl.loadUserById(userId);
-                if (userDetails != null) {
+                if (userDetails != null && SecurityContextHolder.getContext().getAuthentication() == null) {
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             userDetails, null, userDetails.getAuthorities());
 

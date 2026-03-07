@@ -1,12 +1,14 @@
 package com.shortner.url_shortner.globalexception;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.shortner.url_shortner.apiresponse.ApiReponse;
 import com.shortner.url_shortner.exceptions.ResourceNotFoundException;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
@@ -22,7 +24,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiReponse<Object>> handleAllExceptions(Exception ex) {
-        return buildErrorResponse("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR, null);
+        return buildErrorResponse("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR, ex.getMessage());
     }
 
     @ExceptionHandler(ResourceNotFoundException.class)
@@ -63,6 +65,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthorizationDeniedException.class)
     public ResponseEntity<ApiReponse<Object>> handleAuthorizationDeniedException(AuthorizationDeniedException e) {
         return buildErrorResponse(e.getMessage(), HttpStatus.FORBIDDEN, null);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiReponse<Object>> handleDataIntegrityViolationException(
+            DataIntegrityViolationException e) {
+
+        String message = e.getMostSpecificCause().getMessage();
+
+        Map<String, String> errors = new HashMap<>();
+
+        if (message != null && message.contains("Key")) {
+            try {
+                String field = message.substring(
+                        message.indexOf("(") + 1,
+                        message.indexOf(")"));
+
+                errors.put(field, field + " already exists");
+
+            } catch (Exception ignored) {
+                errors.put("database", "Duplicate value violation");
+            }
+        }
+
+        return buildErrorResponse("Validation failed", HttpStatus.CONFLICT, errors);
     }
 
     private ResponseEntity<ApiReponse<Object>>
